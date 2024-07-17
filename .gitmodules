@@ -1,0 +1,3 @@
+[submodule "FileSystemSafeWatcher"]
+	path = lib/FileSystemSafeWatcher
+	url = https://github.com/melenaos/FileSystemSafeWatcher

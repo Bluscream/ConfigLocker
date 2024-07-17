@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ConfigLocker": {
+      "commandName": "Project",
+      "commandLineArgs": "-console",
+      "nativeDebugging": true,
+      "jsWebView2Debugging": false
+    }
+  }
+}

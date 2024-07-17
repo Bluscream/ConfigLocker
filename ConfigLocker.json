@@ -1,0 +1,67 @@
+﻿{
+	"Logging": {
+		"NLog": {
+			"IncludeScopes": false,
+			"ParseMessageTemplates": true,
+			"CaptureMessageProperties": true
+		}
+	},
+	"NLog": {
+		"autoreload": true,
+		"internalLogLevel": "Info",
+		"internalLogFile": "${environment:TEMP}\\ConfigLocker-internal.log",
+		"throwConfigExceptions": true,
+		"targets": {
+			"console": {
+				"type": "Console",
+				"layout": "${date}|${level:uppercase=true}|${message} ${exception:format=tostring}|${logger}|${all-event-properties}"
+			},
+			"file": {
+				"type": "AsyncWrapper",
+				"target": {
+					"wrappedFile": {
+						"type": "File",
+						"fileName": "${environment:TEMP}\\ConfigLocker.log",
+						"layout": {
+							"type": "JsonLayout",
+							"Attributes": [
+								{
+									"name": "timestamp",
+									"layout": "${date:format=o}"
+								},
+								{
+									"name": "level",
+									"layout": "${level}"
+								},
+								{
+									"name": "logger",
+									"layout": "${logger}"
+								},
+								{
+									"name": "message",
+									"layout": "${message:raw=true}"
+								},
+								{
+									"name": "properties",
+									"encode": false,
+									"layout": {
+										"type": "JsonLayout",
+										"includeallproperties": "true"
+									}
+								}
+							]
+						}
+					}
+				}
+			}
+		},
+		"rules": [
+			{
+				"logger": "*",
+				"minLevel": "Trace",
+				"writeTo": "File,Console"
+			}
+		]
+	},
+	"watchers": []
+}
