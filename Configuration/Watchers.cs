@@ -58,6 +58,8 @@ public partial class Watcher {
     [JsonIgnore]
     public virtual IEnumerable<FileInfo> Inputs { get { return InputPaths.Select(x => new FileInfo(x)); } }
     [JsonIgnore]
+    public Dictionary<string, object?> CombinedInputs { get; private set; }
+    [JsonIgnore]
     public virtual FileInfo Output { get { return new FileInfo(OutputPath); } }
     [JsonIgnore]
     public FileSystemSafeWatcher? OutputWatcher { get; private set; }
@@ -131,6 +133,7 @@ public partial class Watcher {
             Program.Log($"⚠️ Tried to start watcher {this} which is already running, restarting it instead...");
             Stop(); Start(); return;
         }
+        ParseInputs();
         OutputWatcher = new FileSystemSafeWatcher(Output.DirectoryName);
         OutputWatcher.Filter = Output.Name;
         OutputWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size;
@@ -155,46 +158,36 @@ public partial class Watcher {
     private void OnOutputWatcherTriggered(object sender, FileSystemEventArgs e) {
         if (!OutputWatcher.EnableRaisingEvents) return;
         OutputWatcher.EnableRaisingEvents = false;
-        //DateTime lastWriteTime = Output.LastWriteTime;
-        //Program.Log($"lastWriteTime: {lastWriteTime}");
-        //Program.Log($"LastRead: {LastRead}");
-        //var maxTicks = 700000000000000000;
-        //var fresh = lastWriteTime.Ticks - LastRead.Ticks > maxTicks;
-        //Program.Log($"Ticks: {lastWriteTime.Ticks - LastRead.Ticks} > {maxTicks} = {fresh}");
-        //if (fresh) { OutputWatcher.EnableRaisingEvents = true; return; }
-
         //Program.Log($"OnOutputWatcherTriggered: {e.FullPath} {e.ChangeType}");
         OnChanged(Output.ReadAllText());
-        //LastRead = lastWriteTime;
         OutputWatcher.EnableRaisingEvents = true;
     }
 
     internal void OnChanged(string NewContent) {
         Program.Log($"OnChanged: {NewContent.Length} chars");
+        OutputWatcher.EnableRaisingEvents = false;
+        SetOutput(CombinedInputs);
+        OutputWatcher.EnableRaisingEvents = true;
     }
 
-    private Dictionary<string, object?> ParseInputs() {
+    internal Dictionary<string, object?> ParseInputs() {
         var ret = new Dictionary<string, object?>();
+        foreach (var input in Inputs) {
+            var text = input.ReadAllText();
+            // ret.MergeRecursiveWith(input);
+        }
+        CombinedInputs = ret;
         return ret;
     }
 
-    protected virtual void AddOrUpdateValue(string key, object value) {
-        if (ConfigurationData.ContainsKey(key)) {
-            ConfigurationData[key] = value;
-        } else {
-            ConfigurationData.Add(key, value);
+    internal bool SetOutput(Dictionary<string, object?> inputsDict) {
+        try {
+            var text = Output.ReadAllText();
+            // text.MergeRecursiveWith(inputsDict);
+        } catch (Exception ex) {
+            Program.Log($"{Name} SetOutput failed: {ex.Message}"); return false;
         }
-    }
-
-    protected virtual void RemoveValue(string key) {
-        ConfigurationData.Remove(key);
-    }
-
-    protected virtual T GetValue<T>(string key) {
-        if (ConfigurationData.TryGetValue(key, out var value)) {
-            return (T)value;
-        }
-        return default(T);
+        return true;
     }
 }
 

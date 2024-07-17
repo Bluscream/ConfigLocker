@@ -8,6 +8,9 @@ using System.Text.RegularExpressions;
 using System.Text;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using ConfigLocker;
+using System.Xml.Linq;
+using NLog.Targets;
 
 public static class Extensions {
     public static T JSonToItem<T>(this string jsonString) => JsonSerializer.Deserialize<T>(jsonString);
@@ -100,6 +103,24 @@ public static class Extensions {
         if (directory.IsEmpty()) return " (is empty ⚠️)";
         return existsInfo ? " (exists ✅)" : string.Empty;
     }
+    public static void Copy(this DirectoryInfo source, DirectoryInfo target, bool overwrite = false) {
+        Directory.CreateDirectory(target.FullName);
+        foreach (FileInfo fi in source.GetFiles())
+            fi.CopyTo(Path.Combine(target.FullName, fi.Name), overwrite);
+        foreach (DirectoryInfo diSourceSubDir in source.GetDirectories())
+            Copy(diSourceSubDir, target.CreateSubdirectory(diSourceSubDir.Name));
+    }
+    public static bool Backup(this DirectoryInfo directory, bool overwrite = false) {
+        if (!directory.Exists) return false;
+        var backupDirPath = directory.FullName + ".bak";
+        if (Directory.Exists(backupDirPath) && !overwrite) return false;
+        Directory.CreateDirectory(backupDirPath);
+        foreach (FileInfo fi in directory.GetFiles()) fi.CopyTo(Path.Combine(backupDirPath, fi.Name), overwrite);
+        foreach (DirectoryInfo diSourceSubDir in directory.GetDirectories()) {
+            diSourceSubDir.Copy(Directory.CreateDirectory(Path.Combine(backupDirPath, diSourceSubDir.Name)), overwrite);
+        }
+        return true;
+    }
     #endregion
     #region FileInfo
     public static FileInfo CombineFile(this DirectoryInfo dir, params string[] paths) {
@@ -138,6 +159,13 @@ public static class Extensions {
     public static void WriteAllText(this FileInfo file, string text) => File.WriteAllText(file.FullName, text);
     public static string ReadAllText(this FileInfo file) => File.ReadAllText(file.FullName);
     public static List<string> ReadAllLines(this FileInfo file) => File.ReadAllLines(file.FullName).ToList();
+    public static bool Backup(this FileInfo file, bool overwrite = false) {
+        if (!file.Exists) return false;
+        var backupFilePath = file.FullName + ".bak";
+        if (File.Exists(backupFilePath) && !overwrite) return false;
+        File.Copy(file.FullName, backupFilePath, overwrite);
+        return true;
+    }
     #endregion
     #region UI
     #endregion
@@ -214,6 +242,35 @@ public static class Extensions {
         if (!dictionary.ContainsKey(key))
             dictionary.Add(key, value);
     }
+    public static Dictionary<string, object?> MergeWith(this Dictionary<string, object?> sourceDict, Dictionary<string, object?> destDict) {
+        foreach (var kvp in sourceDict) {
+            if (destDict.ContainsKey(kvp.Key)) {
+                Program.Log($"Key '{kvp.Key}' already exists and will be overwritten.");
+            }
+            destDict[kvp.Key] = kvp.Value;
+        }
+        return destDict;
+    }
+    public static Dictionary<string, object> MergeRecursiveWith(this Dictionary<string, object> sourceDict, Dictionary<string, object> targetDict) {
+        foreach (var kvp in sourceDict) {
+            if (targetDict.TryGetValue(kvp.Key, out var existingValue)) {
+                if (existingValue is Dictionary<string, object> existingDict && kvp.Value is Dictionary<string, object> sourceDictValue) {
+                    sourceDictValue.MergeRecursiveWith(existingDict);
+                } else if (kvp.Value is null) {
+                    targetDict.Remove(kvp.Key);
+                    Program.Log($"Removed key '{kvp.Key}' as it was set to null in the source dictionary.");
+                } else {
+                    targetDict[kvp.Key] = kvp.Value;
+                    Program.Log($"Overwriting existing value for key '{kvp.Key}'.");
+                }
+            } else {
+                targetDict[kvp.Key] = kvp.Value;
+            }
+        }
+
+        return targetDict;
+    }
+
     #endregion
     #region List
     public static string ToQueryString(this NameValueCollection nvc) {

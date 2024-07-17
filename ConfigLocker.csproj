@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Configuration\Watchers.cs" />
     <Compile Remove="Watchers\Ini.cs" />
   </ItemGroup>
 

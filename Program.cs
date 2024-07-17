@@ -7,12 +7,14 @@ using NLog.Extensions;
 using NLog.Extensions.Logging;
 using System.IO;
 using System.Text;
+using NLog.Targets;
 namespace ConfigLocker;
 static class Program {
     private const string ConfigFileName = "ConfigLocker.json";
     //private static readonly Encoding EncodingUTF8 = Encoding.GetEncoding(65001);
     internal static Logger Logger { get; private set; } = LogManager.GetCurrentClassLogger();
     internal static Configuration Config;
+    internal static List<Watcher> Watchers { get; private set; } = new();
 
     internal static void Log(object? arg) {
         if (arg is null) return;
@@ -37,13 +39,20 @@ static class Program {
                     loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
                     //loggingBuilder.AddNLog(builder);
                 }).BuildServiceProvider();
-
-            foreach (var watcher in Config.Watchers) {
+            foreach (Watcher watcher in Config.Watchers) {
                 //Log($"Got watcher {watcher}");
                 Log(watcher.DebugString());
                 if (watcher.OutputPath is null) { Log($"Watcher {watcher} Output path is invalid"); continue; }
                 if (watcher.Output is null || !watcher.Output.Exists) { Log($"Watcher {watcher} Output path {watcher.OutputPath?.Quote()} does not exist"); continue; }
-                if (watcher.Enabled) watcher.Start();
+                switch (watcher.GetConfigType()) {
+                    case ConfigType.JSON: Watchers.Add((JsonWatcher)watcher); break;
+                    //case ConfigType.INI: newWatchers.Add((JsonWatcher)watcher); break;
+                    //case ConfigType.VDF: newWatchers.Add((JsonWatcher)watcher); break;
+                    default: Log($"Watcher type for {watcher} could not determined, please set it manually"); continue;
+                }
+            }
+            foreach (var watcher in Watchers) {
+                watcher.Start();
             }
 
             //var runner = servicesProvider.GetRequiredService<Runner>();
