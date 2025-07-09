@@ -1,0 +1,46 @@
+{
+  "watchers": [
+    {
+      "name": "Database Configs",
+      "description": "Watches database configuration files",
+      "type": "JSON",
+      "enabled": true,
+      "inputs": [
+        "./config/database/base.json",
+        "./config/database/override.json"
+      ],
+      "output": "./config/database/final.json",
+      "checkonchange": true,
+      "checkonstartup": true,
+      "checkevery": "00:15:00"
+    },
+    {
+      "name": "Logging Configs",
+      "description": "Watches logging configuration files",
+      "type": "XML",
+      "enabled": true,
+      "inputs": [
+        "./config/logging/base.xml",
+        "./config/logging/override.xml"
+      ],
+      "output": "./config/logging/final.xml",
+      "checkonchange": true,
+      "checkonstartup": true,
+      "checkevery": "00:30:00"
+    },
+    {
+      "name": "App Settings",
+      "description": "Watches application settings files",
+      "type": "INI",
+      "enabled": true,
+      "inputs": [
+        "./config/app/base.ini",
+        "./config/app/override.ini"
+      ],
+      "output": "./config/app/final.ini",
+      "checkonchange": true,
+      "checkonstartup": true,
+      "checkevery": "01:00:00"
+    }
+  ]
+} 

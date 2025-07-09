@@ -1,0 +1,18 @@
+{
+  "watchers": [
+    {
+      "name": "XML Config Example",
+      "description": "Watches XML configuration files and merges changes",
+      "type": "XML",
+      "enabled": true,
+      "inputs": [
+        "./examples/input1.xml",
+        "./examples/input2.xml"
+      ],
+      "output": "./examples/output.xml",
+      "checkonchange": true,
+      "checkonstartup": true,
+      "checkevery": "00:30:00"
+    }
+  ]
+} 

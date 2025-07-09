@@ -1,0 +1,18 @@
+{
+  "watchers": [
+    {
+      "name": "CFG Config Example",
+      "description": "Watches CFG configuration files and merges changes",
+      "type": "CFG",
+      "enabled": true,
+      "inputs": [
+        "./examples/input1.cfg",
+        "./examples/input2.cfg"
+      ],
+      "output": "./examples/output.cfg",
+      "checkonchange": true,
+      "checkonstartup": true,
+      "checkevery": "00:30:00"
+    }
+  ]
+} 

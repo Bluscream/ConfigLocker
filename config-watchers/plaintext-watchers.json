@@ -1,0 +1,18 @@
+{
+  "watchers": [
+    {
+      "name": "PlainText Config Example",
+      "description": "Watches plaintext files and overwrites the entire content",
+      "type": "PlainText",
+      "enabled": true,
+      "inputs": [
+        "./examples/input1.txt",
+        "./examples/input2.txt"
+      ],
+      "output": "./examples/output.txt",
+      "checkonchange": true,
+      "checkonstartup": true,
+      "checkevery": "00:30:00"
+    }
+  ]
+} 

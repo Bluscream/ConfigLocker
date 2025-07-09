@@ -8,6 +8,7 @@ A powerful configuration file watcher and merger that supports multiple file for
 - **Real-time Monitoring**: Automatically detect changes to input files and update output files
 - **Smart Merging**: Intelligently merge configuration data while preserving structure
 - **PlainText Overwriting**: For plaintext files, completely overwrite the output file with combined input content
+- **Modular Configuration**: Organize watchers in individual JSON files within a `config-watchers` directory
 - **Backup Support**: Automatic backup creation before making changes
 - **Comprehensive Logging**: Detailed logging with NLog integration
 - **Extensible Architecture**: Easy to add new file format processors
@@ -42,7 +43,23 @@ A powerful configuration file watcher and merger that supports multiple file for
 
 ## Configuration
 
-Create a `ConfigLocker.json` file in your application directory:
+ConfigLocker supports two configuration approaches:
+
+### 1. Modular Configuration (Recommended)
+
+Create a `config-watchers` directory and place individual JSON files containing watcher configurations:
+
+```
+config-watchers/
+├── json-watchers.json
+├── xml-watchers.json
+├── ini-watchers.json
+├── cfg-watchers.json
+├── plaintext-watchers.json
+└── multi-watchers.json
+```
+
+Each JSON file should contain a `watchers` array:
 
 ```json
 {
@@ -60,31 +77,28 @@ Create a `ConfigLocker.json` file in your application directory:
       "checkonchange": true,
       "checkonstartup": true,
       "checkevery": "00:30:00"
-    },
+    }
+  ]
+}
+```
+
+### 2. Single File Configuration (Legacy)
+
+Alternatively, you can define all watchers in the main `ConfigLocker.json` file:
+
+```json
+{
+  "watchers": [
     {
-      "name": "My CFG Config",
-      "description": "Watches CFG configuration files",
-      "type": "CFG",
+      "name": "My JSON Config",
+      "description": "Watches JSON configuration files",
+      "type": "JSON",
       "enabled": true,
       "inputs": [
-        "./config/base.cfg",
-        "./config/override.cfg"
+        "./config/base.json",
+        "./config/override.json"
       ],
-      "output": "./config/final.cfg",
-      "checkonchange": true,
-      "checkonstartup": true,
-      "checkevery": "00:30:00"
-    },
-    {
-      "name": "My PlainText Config",
-      "description": "Watches plaintext files",
-      "type": "PlainText",
-      "enabled": true,
-      "inputs": [
-        "./config/base.txt",
-        "./config/override.txt"
-      ],
-      "output": "./config/final.txt",
+      "output": "./config/final.json",
       "checkonchange": true,
       "checkonstartup": true,
       "checkevery": "00:30:00"
@@ -144,7 +158,10 @@ features debug "false"
    dotnet build
    ```
 
-2. **Configure your watchers** in `ConfigLocker.json`
+2. **Configure your watchers**:
+   - Create a `config-watchers` directory
+   - Add individual JSON files for each watcher or group of watchers
+   - Or use the legacy approach with a single `ConfigLocker.json` file
 
 3. **Run the application**:
    ```bash
@@ -154,6 +171,47 @@ features debug "false"
 4. **Modify input files** and watch the output files update automatically
 
 ## Examples
+
+### Individual Watcher Files
+
+**config-watchers/json-watchers.json**:
+```json
+{
+  "watchers": [
+    {
+      "name": "JSON Config Example",
+      "type": "JSON",
+      "enabled": true,
+      "inputs": ["./examples/input1.json", "./examples/input2.json"],
+      "output": "./examples/output.json"
+    }
+  ]
+}
+```
+
+**config-watchers/multi-watchers.json**:
+```json
+{
+  "watchers": [
+    {
+      "name": "Database Configs",
+      "type": "JSON",
+      "enabled": true,
+      "inputs": ["./config/database/base.json", "./config/database/override.json"],
+      "output": "./config/database/final.json"
+    },
+    {
+      "name": "Logging Configs",
+      "type": "XML",
+      "enabled": true,
+      "inputs": ["./config/logging/base.xml", "./config/logging/override.xml"],
+      "output": "./config/logging/final.xml"
+    }
+  ]
+}
+```
+
+### Sample Configuration Files
 
 See the `examples/` directory for sample configuration files demonstrating each format:
 

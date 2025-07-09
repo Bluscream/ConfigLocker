@@ -1,0 +1,18 @@
+{
+  "watchers": [
+    {
+      "name": "JSON Config Example",
+      "description": "Watches JSON configuration files and merges changes",
+      "type": "JSON",
+      "enabled": true,
+      "inputs": [
+        "./examples/input1.json",
+        "./examples/input2.json"
+      ],
+      "output": "./examples/output.json",
+      "checkonchange": true,
+      "checkonstartup": true,
+      "checkevery": "00:30:00"
+    }
+  ]
+} 

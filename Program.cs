@@ -11,6 +11,7 @@ using NLog.Targets;
 namespace ConfigLocker;
 static class Program {
     private const string ConfigFileName = "ConfigLocker.json";
+    private const string WatchersDirectory = "config-watchers";
     //private static readonly Encoding EncodingUTF8 = Encoding.GetEncoding(65001);
     internal static Logger Logger { get; private set; } = LogManager.GetCurrentClassLogger();
     internal static Configuration Config;
@@ -44,28 +45,19 @@ static class Program {
             Log($"📁 Working directory: {currentDir}");
             Log($"📄 Config file: {ConfigFileName}");
             
-            foreach (Watcher watcher in Config.Watchers) {
-                Log($"🔍 Processing watcher: {watcher}");
-                Log(watcher.DebugString());
-                
-                if (watcher.OutputPath is null) { 
-                    Log($"❌ Watcher {watcher} Output path is invalid"); 
-                    continue; 
+            // Load watchers from the watchers directory if it exists
+            var watchersFromDirectory = LoadWatchersFromDirectory();
+            if (watchersFromDirectory.Any()) {
+                Log($"📂 Loaded {watchersFromDirectory.Count} watchers from {WatchersDirectory} directory");
+                foreach (var watcher in watchersFromDirectory) {
+                    ProcessWatcher(watcher);
                 }
-                
-                if (watcher.Output is null || !watcher.Output.Exists) { 
-                    Log($"❌ Watcher {watcher} Output path {watcher.OutputPath?.Quote()} does not exist"); 
-                    continue; 
+            } else {
+                // Fallback to loading from the main config file
+                Log($"📂 No watchers found in {WatchersDirectory} directory, using main config file");
+                foreach (Watcher watcher in Config.Watchers) {
+                    ProcessWatcher(watcher);
                 }
-                
-                var configType = watcher.GetConfigType();
-                if (configType == ConfigType.Unknown) {
-                    Log($"❌ Watcher type for {watcher} could not be determined, please set it manually");
-                    continue;
-                }
-                
-                Log($"✅ Adding watcher {watcher} with type {configType}");
-                Watchers.Add(watcher);
             }
             
             Log($"🚀 Starting {Watchers.Count} watchers...");
@@ -77,8 +69,9 @@ static class Program {
             //runner.DoAction("Action1");
 
             Console.WriteLine("✅ ConfigLocker is running in the background now, press ANY key to exit");
-            Console.WriteLine("📊 Supported formats: JSON, XML, INI, PlainText");
+            Console.WriteLine("📊 Supported formats: JSON, XML, INI, CFG, PlainText");
             Console.WriteLine("🔄 Watchers will automatically merge/overwrite config files when changes are detected");
+            Console.WriteLine($"📂 Watchers can be configured in individual files in the '{WatchersDirectory}' directory");
             Console.ReadLine();
             
             Log("🛑 Shutting down ConfigLocker...");
@@ -93,6 +86,71 @@ static class Program {
             LogManager.Shutdown();
         }
     }
+
+    private static List<Watcher> LoadWatchersFromDirectory() {
+        var watchers = new List<Watcher>();
+        var watchersDir = Path.Combine(Directory.GetCurrentDirectory(), WatchersDirectory);
+        
+        if (!Directory.Exists(watchersDir)) {
+            Log($"📂 {WatchersDirectory} directory does not exist");
+            return watchers;
+        }
+
+        var jsonFiles = Directory.GetFiles(watchersDir, "*.json", SearchOption.TopDirectoryOnly);
+        Log($"📂 Found {jsonFiles.Length} JSON files in {WatchersDirectory} directory");
+
+        foreach (var jsonFile in jsonFiles) {
+            try {
+                var fileName = Path.GetFileName(jsonFile);
+                Log($"📄 Loading watchers from: {fileName}");
+                
+                var jsonContent = File.ReadAllText(jsonFile);
+                var watcherConfig = System.Text.Json.JsonSerializer.Deserialize<WatcherConfig>(jsonContent);
+                
+                if (watcherConfig?.Watchers != null) {
+                    foreach (var watcher in watcherConfig.Watchers) {
+                        watchers.Add(watcher);
+                        Log($"✅ Loaded watcher '{watcher.Name}' from {fileName}");
+                    }
+                } else {
+                    Log($"⚠️ No watchers found in {fileName}");
+                }
+            } catch (Exception ex) {
+                Log($"❌ Failed to load watchers from {Path.GetFileName(jsonFile)}: {ex.Message}");
+            }
+        }
+
+        return watchers;
+    }
+
+    private static void ProcessWatcher(Watcher watcher) {
+        Log($"🔍 Processing watcher: {watcher}");
+        Log(watcher.DebugString());
+        
+        if (watcher.OutputPath is null) { 
+            Log($"❌ Watcher {watcher} Output path is invalid"); 
+            return; 
+        }
+        
+        if (watcher.Output is null || !watcher.Output.Exists) { 
+            Log($"❌ Watcher {watcher} Output path {watcher.OutputPath?.Quote()} does not exist"); 
+            return; 
+        }
+        
+        var configType = watcher.GetConfigType();
+        if (configType == ConfigType.Unknown) {
+            Log($"❌ Watcher type for {watcher} could not be determined, please set it manually");
+            return;
+        }
+        
+        Log($"✅ Adding watcher {watcher} with type {configType}");
+        Watchers.Add(watcher);
+    }
+}
+
+// Configuration class for individual watcher files
+public class WatcherConfig {
+    public List<Watcher> Watchers { get; set; } = new();
 }
 
 public class Runner {
