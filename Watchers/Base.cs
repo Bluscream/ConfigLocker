@@ -13,7 +13,8 @@ public enum ConfigType {
     INI,
     VDF,
     XML,
-    PlainText
+    PlainText,
+    CFG
 }
 
 public interface IConfigProcessor {
@@ -75,8 +76,10 @@ public partial class Watcher {
         switch (ext) {
             case ".json":
                 return ConfigType.JSON;
-            case ".ini" or ".cfg":
+            case ".ini":
                 return ConfigType.INI;
+            case ".cfg":
+                return ConfigType.CFG;
             case ".vdf":
                 return ConfigType.VDF;
             case ".xml":
@@ -194,6 +197,7 @@ public partial class Watcher {
             ConfigType.XML => new XmlConfigProcessor(),
             ConfigType.PlainText => new PlainTextConfigProcessor(),
             ConfigType.INI => new IniConfigProcessor(),
+            ConfigType.CFG => new CfgConfigProcessor(),
             _ => throw new NotSupportedException($"Config type {configType} is not supported")
         };
     }

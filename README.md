@@ -1,10 +1,10 @@
 # ConfigLocker
 
-A powerful configuration file watcher and merger that supports multiple file formats including JSON, XML, INI, and PlainText.
+A powerful configuration file watcher and merger that supports multiple file formats including JSON, XML, INI, CFG, and PlainText.
 
 ## Features
 
-- **Multi-format Support**: Watch and merge configuration files in JSON, XML, INI, and PlainText formats
+- **Multi-format Support**: Watch and merge configuration files in JSON, XML, INI, CFG, and PlainText formats
 - **Real-time Monitoring**: Automatically detect changes to input files and update output files
 - **Smart Merging**: Intelligently merge configuration data while preserving structure
 - **PlainText Overwriting**: For plaintext files, completely overwrite the output file with combined input content
@@ -27,7 +27,13 @@ A powerful configuration file watcher and merger that supports multiple file for
 ### INI
 - **Merging**: Section-based merging with key-value pairs
 - **Features**: Supports global keys and sectioned configuration
-- **Extensions**: `.ini`, `.cfg`
+- **Extensions**: `.ini`
+
+### CFG
+- **Merging**: Section-based merging with custom syntax
+- **Features**: Supports comments (`#`, `;`, `//`) and quoted values
+- **Syntax**: `<any string> variable "value"`
+- **Extensions**: `.cfg`
 
 ### PlainText
 - **Behavior**: Overwrites entire output file (no merging)
@@ -56,15 +62,15 @@ Create a `ConfigLocker.json` file in your application directory:
       "checkevery": "00:30:00"
     },
     {
-      "name": "My XML Config",
-      "description": "Watches XML configuration files",
-      "type": "XML",
+      "name": "My CFG Config",
+      "description": "Watches CFG configuration files",
+      "type": "CFG",
       "enabled": true,
       "inputs": [
-        "./config/base.xml",
-        "./config/override.xml"
+        "./config/base.cfg",
+        "./config/override.cfg"
       ],
-      "output": "./config/final.xml",
+      "output": "./config/final.cfg",
       "checkonchange": true,
       "checkonstartup": true,
       "checkevery": "00:30:00"
@@ -91,13 +97,45 @@ Create a `ConfigLocker.json` file in your application directory:
 
 - **name**: Human-readable name for the watcher
 - **description**: Optional description of what the watcher does
-- **type**: File format type (JSON, XML, INI, PlainText)
+- **type**: File format type (JSON, XML, INI, CFG, PlainText)
 - **enabled**: Whether the watcher is active
 - **inputs**: Array of input file paths to monitor
 - **output**: Output file path to update
 - **checkonchange**: Whether to check for changes when files are modified
 - **checkonstartup**: Whether to process files when the application starts
 - **checkevery**: How often to check for changes (TimeSpan format)
+
+## CFG Format Specification
+
+The CFG format uses a specific syntax:
+
+```
+<section> <variable> "value"
+```
+
+### Features:
+- **Comments**: Lines starting with `#`, `;`, or `//` are ignored
+- **Quoted Values**: Values must be enclosed in double quotes
+- **Escaped Quotes**: Use `\"` to include quotes in values
+- **Flexible Sections**: Section names can contain spaces
+
+### Example CFG File:
+```
+# CFG Configuration File
+# This is a comment
+
+; Another comment style
+database host "localhost"
+database port "5432"
+database name "mydb"
+
+// Yet another comment style
+logging level "info"
+logging file "app.log"
+
+features cache "true"
+features debug "false"
+```
 
 ## Usage
 
@@ -122,6 +160,7 @@ See the `examples/` directory for sample configuration files demonstrating each 
 - `examples/input1.json` + `examples/input2.json` → `examples/output.json`
 - `examples/input1.xml` + `examples/input2.xml` → `examples/output.xml`
 - `examples/input1.ini` + `examples/input2.ini` → `examples/output.ini`
+- `examples/input1.cfg` + `examples/input2.cfg` → `examples/output.cfg`
 - `examples/input1.txt` + `examples/input2.txt` → `examples/output.txt`
 
 ## Architecture
@@ -132,6 +171,7 @@ The application uses a modular, interface-based architecture:
 - **JsonConfigProcessor**: Handles JSON parsing and merging
 - **XmlConfigProcessor**: Handles XML parsing and merging
 - **IniConfigProcessor**: Handles INI parsing and merging
+- **CfgConfigProcessor**: Handles CFG parsing and merging
 - **PlainTextConfigProcessor**: Handles plaintext concatenation
 
 ### Adding New Formats
@@ -157,7 +197,6 @@ The application uses NLog for comprehensive logging. Logs are written to:
 - Microsoft.Extensions.DependencyInjection
 - NLog
 - ini-parser-netcore
-- System.Xml.Linq
 
 ## License
 
