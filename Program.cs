@@ -39,18 +39,36 @@ static class Program {
                     loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
                     //loggingBuilder.AddNLog(builder);
                 }).BuildServiceProvider();
+            
+            Log("🔧 ConfigLocker starting up...");
+            Log($"📁 Working directory: {currentDir}");
+            Log($"📄 Config file: {ConfigFileName}");
+            
             foreach (Watcher watcher in Config.Watchers) {
-                //Log($"Got watcher {watcher}");
+                Log($"🔍 Processing watcher: {watcher}");
                 Log(watcher.DebugString());
-                if (watcher.OutputPath is null) { Log($"Watcher {watcher} Output path is invalid"); continue; }
-                if (watcher.Output is null || !watcher.Output.Exists) { Log($"Watcher {watcher} Output path {watcher.OutputPath?.Quote()} does not exist"); continue; }
-                switch (watcher.GetConfigType()) {
-                    case ConfigType.JSON: Watchers.Add((JsonWatcher)watcher); break;
-                    //case ConfigType.INI: newWatchers.Add((JsonWatcher)watcher); break;
-                    //case ConfigType.VDF: newWatchers.Add((JsonWatcher)watcher); break;
-                    default: Log($"Watcher type for {watcher} could not determined, please set it manually"); continue;
+                
+                if (watcher.OutputPath is null) { 
+                    Log($"❌ Watcher {watcher} Output path is invalid"); 
+                    continue; 
                 }
+                
+                if (watcher.Output is null || !watcher.Output.Exists) { 
+                    Log($"❌ Watcher {watcher} Output path {watcher.OutputPath?.Quote()} does not exist"); 
+                    continue; 
+                }
+                
+                var configType = watcher.GetConfigType();
+                if (configType == ConfigType.Unknown) {
+                    Log($"❌ Watcher type for {watcher} could not be determined, please set it manually");
+                    continue;
+                }
+                
+                Log($"✅ Adding watcher {watcher} with type {configType}");
+                Watchers.Add(watcher);
             }
+            
+            Log($"🚀 Starting {Watchers.Count} watchers...");
             foreach (var watcher in Watchers) {
                 watcher.Start();
             }
@@ -58,8 +76,15 @@ static class Program {
             //var runner = servicesProvider.GetRequiredService<Runner>();
             //runner.DoAction("Action1");
 
-            Console.WriteLine("ConfigLocker is running in the background now, press ANY key to exit");
+            Console.WriteLine("✅ ConfigLocker is running in the background now, press ANY key to exit");
+            Console.WriteLine("📊 Supported formats: JSON, XML, INI, PlainText");
+            Console.WriteLine("🔄 Watchers will automatically merge/overwrite config files when changes are detected");
             Console.ReadLine();
+            
+            Log("🛑 Shutting down ConfigLocker...");
+            foreach (var watcher in Watchers) {
+                watcher.Stop();
+            }
             //Config.JsonToFile(ConfigFileName);
         } catch (Exception ex) {
             Logger.Error(ex, "Stopped program because of exception");

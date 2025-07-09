@@ -4,36 +4,39 @@
 using ConfigLocker;
 using System.Text.Json;
 
-public partial class JsonWatcher : Watcher {
+public class JsonConfigProcessor : IConfigProcessor {
+    public bool SupportsMerging => true;
 
-    internal override Dictionary<string, object> ParseInputs() {
-        var ret = new Dictionary<string, object>();
-        foreach (var input in Inputs) {
-            if (!input.Exists) continue;
-            var inputText = input.ReadAllText();
-            var inputDict = JsonSerializer.Deserialize<Dictionary<string, object>>(inputText);
-            ret = ret.MergeRecursiveWith(inputDict);
+    public Dictionary<string, object> ParseInput(string content) {
+        if (string.IsNullOrWhiteSpace(content)) {
+            return new Dictionary<string, object>();
         }
-        CombinedInputs = ret;
-        return ret;
-    }
-
-    internal override bool SetOutput(Dictionary<string, object>? inputsDict = null) {
+        
         try {
-            inputsDict = inputsDict ?? CombinedInputs;
-            var outputText = Output.ReadAllText();
-            var outputDict = JsonSerializer.Deserialize<Dictionary<string, object>>(outputText);
-            var finalDict = outputDict.MergeRecursiveWith(inputsDict);
-            var finalText = JsonSerializer.Serialize(finalDict);
-            if (outputText.Length == finalText.Length) {
-                Program.Log($"{this} > outputText and finalText are the same ({finalText.Length})");
-                return true;
-            }
-            Output.Backup(true);
-            Output.WriteAllText(finalText);
-        } catch (Exception ex) {
-            Program.Log($"{Name} SetOutput failed: {ex.Message}"); return false;
+            var result = JsonSerializer.Deserialize<Dictionary<string, object>>(content);
+            return result ?? new Dictionary<string, object>();
+        } catch (JsonException ex) {
+            throw new InvalidOperationException($"Failed to parse JSON: {ex.Message}");
         }
-        return true;
     }
+
+    public string MergeAndSerialize(Dictionary<string, object> inputs, string existingContent) {
+        try {
+            var existingDict = string.IsNullOrWhiteSpace(existingContent) 
+                ? new Dictionary<string, object>() 
+                : JsonSerializer.Deserialize<Dictionary<string, object>>(existingContent) ?? new Dictionary<string, object>();
+            
+            var finalDict = existingDict.MergeRecursiveWith(inputs);
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            return JsonSerializer.Serialize(finalDict, options);
+        } catch (JsonException ex) {
+            throw new InvalidOperationException($"Failed to merge/serialize JSON: {ex.Message}");
+        }
+    }
+}
+
+// Legacy class for backward compatibility
+public partial class JsonWatcher : Watcher {
+    // This class is now deprecated in favor of the new interface-based approach
+    // It's kept for backward compatibility but the functionality is now in JsonConfigProcessor
 }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <database>
+    <password>secret123</password>
+    <timeout>30</timeout>
+  </database>
+  <logging>
+    <level>debug</level>
+    <maxSize>10MB</maxSize>
+  </logging>
+  <security>
+    <ssl>true</ssl>
+    <encryption>AES256</encryption>
+  </security>
+</configuration> 

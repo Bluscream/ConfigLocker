@@ -1,0 +1,10 @@
+# Additional Configuration
+# This content will be appended to the output
+
+DATABASE_PASSWORD=secret123
+DATABASE_TIMEOUT=30
+
+LOGGING_MAXSIZE=10MB
+
+SECURITY_SSL=true
+SECURITY_ENCRYPTION=AES256 

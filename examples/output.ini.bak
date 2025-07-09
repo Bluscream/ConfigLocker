@@ -1,0 +1,12 @@
+[database]
+host=localhost
+port=5432
+name=mydb
+
+[logging]
+level=info
+file=app.log
+
+[features]
+cache=true
+debug=false 

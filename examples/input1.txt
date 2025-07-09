@@ -1,0 +1,12 @@
+# Application Configuration
+# This is a plaintext configuration file
+
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=mydb
+
+LOGGING_LEVEL=info
+LOGGING_FILE=app.log
+
+FEATURES_CACHE=true
+FEATURES_DEBUG=false 
